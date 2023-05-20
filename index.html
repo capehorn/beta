@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/normalize.css">
+    <link rel="stylesheet" href="./css/main.css">
+    <title>Alpha</title>
+</head>
+<body>
+
+<div>
+    <canvas id="beta-canvas" class="render-canvas" width="800" height="800" style="margin: 16px; border: 1px solid gray"></canvas>
+</div>
+
+<script type="module">
+
+    import * as V from "./js/vector.js";
+    import * as M from "./js/matrix.js";
+    import { Transform } from "./js/transform.js";
+    import { Scene } from "./js/scene.js";
+    import { CanvasRenderer } from "./js/canvas-renderer.js";
+    import { range } from "./js/utils.js";
+    import { lineSegmentIntersection } from "./js/geom.js";
+
+
+    const canvas = document.getElementById("beta-canvas");
+    const scene = new Scene();
+    const editor = scene.edit();
+    
+    drawComplexMeshes( editor );
+    //drawLines( editor );
+    
+    const renderer = new CanvasRenderer( canvas, scene );
+    renderer.render();
+    
+
+    const logFlag = true;
+    if ( logFlag) {
+        console.log("identity:");
+        console.log( M.toString( M.Identity ) );
+
+        console.log("inv. identity:");
+        console.log( M.toString( M.inverse( M.Identity ) ) );
+
+        const m = [
+            0, 0, -1, 2,
+            0, 1, 0, 0,
+            9, 0, 0, 0,
+            0, 0, 0, 1
+        ]; 
+        console.log( "m:" );
+        console.log( M.toString( m ) );
+        console.log( "inv. m:" );
+        console.log( M.toString( M.inverse( m ) ) );
+        console.log( "m * inv(m):" );
+        console.log( M.toString( M.mul( m, M.inverse( m ) ) ) );
+
+        const r_X_90 = new Transform().rotate( V.EX, 90 );
+        console.log( r_X_90.apply( V.EY ) );
+
+        console.log( "range(0, 5): " +  range( 0, 5 ));
+        console.log( "range(5, 0): " +  range( 5, 0 ));
+        console.log( "range(2, -2): " +  range( 2, -2 ));
+
+        console.log( "Intersection" );
+        console.log( lineSegmentIntersection( [ 0, 0], [ 10, 0 ], [ 5, -1 ], [ 5, 1 ] ) );
+        console.log( lineSegmentIntersection( [ -10, 0], [ 10, 0 ], [ -1, -1 ], [ 5, 5 ] ) );
+    }
+
+    function drawLines( editor ) {
+        editor.addPolyline( [ [ 300, 0, 0 ], [ 300, 0, 300 ] ] );
+        editor.addPolyline( [ [ 0, 0, 100 ],  [ 400, 0, 100 ] ] );
+    }
+    
+    function drawComplexMeshes( editor ) {
+        editor.selectOn();
+        //editor.addPlanarPolygon( [ [ 0, 0, 0 ],  [ 100, 0, 0 ], [ 100, 100, 0 ], [ 0, 100, 0 ] ] );
+        
+        editor.addPlanarPolygon( [ [ 0, 0, 0 ],  [ 300, 0, 0 ], [ 300, 0, 300 ], [ 200, 0, 300 ], [ 200, 0, 100 ], [ 100, 0, 100 ], [ 100, 0, 300 ], [ 0, 0, 300 ] ] );
+        // editor.selectOff();
+        // editor.extrudeBy( [ 0, 50, 0 ] );
+        editor.selectClear();
+
+        editor.selectOn();
+        //editor.addPlanarPolygon( [ [ 120, 0, 120 ],  [ 180, 0, 120 ], [ 180, 0, 180 ], [ 120, 0, 180 ] ] );
+        //editor.extrudeBy( [ 0, 250, 0 ] );
+        editor.addPlanarPolygon( [ [ 120, 0, 120 ],  [ 180, 0, 120 ], [ 180, 250, 120 ], [ 120, 250, 120 ] ] );
+        //editor.extrudeBy( [ 0, 0, 60 ] );
+    }
+
+</script>
+    
+</body>
+</html>
