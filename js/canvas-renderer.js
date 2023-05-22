@@ -4,23 +4,35 @@ import { lineSegmentIntersection, polygonCentroid } from "./geom.js";
 import * as M from "./matrix.js";
 
 export class CanvasRenderer {
+    #coordTrf;
     constructor( canvas, scene, camera = Camera.isometric() ) {
         this.canvas = canvas;
         this.scene = scene;
         this.camera = camera;
         this.ctx = this.canvas.getContext("2d");
-        //this.ctx.transform(1, 0, 0, -1, 400, 400);
         this.ctx.font = "10px monospace";
-        this.showAxis = true;
         
-        // this.#coordTrf = [ 
-        //     1, 0, 0, 0,
-        //     0, -1, 0, 0,
-        //     0, 0, 1, 0,
-        //     400, 400, 0, 1
-        // ];
-        //console.log( this.camera.m );
+        switch( camera.type ) {
+            case "isometric": 
+                this.#coordTrf = [ 
+                    1, 0, 0, 0,
+                    0, -1, 0, 0,
+                    0, 0, 1, 0,
+                    400, 400, 0, 1
+                ];
+                break;
 
+            case "standard":
+            default :
+                this.#coordTrf = [ 
+                    1, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1
+                ];
+        }
+
+        this.showAxis = true;
     }
 
     render() {
@@ -48,13 +60,10 @@ export class CanvasRenderer {
     }
 
     #trf( v ) {
-        const coordTrf = [ 
-            1, 0, 0, 0,
-            0, -1, 0, 0,
-            0, 0, 1, 0,
-            400, 400, 0, 1
-        ];
-        const trf = new Transform( M.mul( this.camera.m, coordTrf ) );
+        if ( v.length === 2 ) {
+            v[ 2 ] = 0;
+        }
+        const trf = new Transform( M.mul( this.camera.m, this.#coordTrf ) );
         return trf.apply( v );
     }
 
@@ -70,21 +79,19 @@ export class CanvasRenderer {
         ctx.fillRect( x - w / 2, y - h / 2, w, h );
     }
 
-    #drawCoordinate( ctx, p, pWorld ) {
-        ctx.save();
-        ctx.fillText("[" + pWorld[ 0 ].toFixed( 0 ) + " " + pWorld[ 1 ].toFixed( 0 ) + " " + pWorld[ 2 ].toFixed( 0 ) +  "]", p[ 0 ] - 5, p[ 1 ] - 5 );
-        ctx.fillText("[" + p[ 0 ].toFixed( 0 ) + " " + p[ 1 ].toFixed( 0 ) + "]", p[ 0 ] + 5, p[ 1 ] + 5 );
-        ctx.restore();
+    #coordValueToStr( v ) {
+        if ( v !== undefined ) {
+            return v.toFixed( 0 );
+        }
+        return "";
     }
 
-    #drawPolygon( ctx, vs, fillStyle = "rgba( 128, 0, 0, .5 )" ) {
-        const path = new Path2D();
-        for ( let i = 0, j = vs.length - 1; i < vs.length; j = i++ ) {
-            path.moveTo( vs[ i ] );
-            path.lineTo( vs[ j ] );
-        }
-        ctx.fillStyle = fillStyle;
-        ctx.fill( path );
+    #drawCoordinate( ctx, p, pWorld ) {
+        const worldText = pWorld.map( this.#coordValueToStr ).join(" ");
+        ctx.save();
+        ctx.fillText("[" + worldText + "]", p[ 0 ] - 5, p[ 1 ] - 5 );
+        ctx.fillText("[" + p[ 0 ].toFixed( 0 ) + " " + p[ 1 ].toFixed( 0 ) + "]", p[ 0 ] + 5, p[ 1 ] + 5 );
+        ctx.restore();
     }
 
     #drawMeshes( ctx ) {
@@ -131,7 +138,7 @@ export class CanvasRenderer {
     }
 
     #drawMesh( ctx, mesh ) {
-        ctx.fillStyle = "rgba( 0, 255, 255, .3 )";
+        ctx.fillStyle = mesh.fillStyle;//"rgba( 0, 255, 255, .3 )";
         const ps = mesh.vertices.map( p => this.#trf( p ) );
         if ( mesh.faces && 0 < mesh.faces.length ) {
             for ( let f of mesh.faces ) {
@@ -167,4 +174,14 @@ export class CanvasRenderer {
             this.#drawCoordinate( ctx, p, mesh.vertices[ i ] ); 
         } );
     }
+
+    // #drawPolygon( ctx, vs, fillStyle = "rgba( 128, 0, 0, .5 )" ) {
+    //     const path = new Path2D();
+    //     for ( let i = 0, j = vs.length - 1; i < vs.length; j = i++ ) {
+    //         path.moveTo( vs[ i ] );
+    //         path.lineTo( vs[ j ] );
+    //     }
+    //     ctx.fillStyle = fillStyle;
+    //     ctx.fill( path );
+    // }
 }

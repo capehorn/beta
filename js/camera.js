@@ -2,8 +2,13 @@ import { Transform } from "./transform.js";
 
 
 export class Camera {
-    constructor( m ) {
+    constructor( m, type = "custom" ) {
         this.m = m;
+        this.type = type;
+    }
+
+    static standard() {
+        return new Camera( [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ], "standard" );
     }
 
     static isometric() {
@@ -11,7 +16,7 @@ export class Camera {
         const ISOMETRIC_BETA = 35.264390; // arcsin( 1 / sqrt(3) )
         const v = new Transform().rotate( [ 0, 1, 0 ], -ISOMETRIC_ALPHA ).apply( [ 1, 0 , 0] );
         const m = new Transform().rotate( [ 0, 1, 0 ], ISOMETRIC_ALPHA ).rotate( v , ISOMETRIC_BETA ).m;
-        return new Camera( m );
+        return new Camera( m, "isometric" );
     }
 
     static dimetric() {

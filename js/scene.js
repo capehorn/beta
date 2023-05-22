@@ -17,10 +17,21 @@ export class Scene {
 }
 
 class Editor {
+
+    #fillStyle;
+
     constructor( meshes ) {
         this.meshes = meshes;
         this.selection = [];
         this.selectActive = false;
+        this.#fillStyle = "rgba( 128, 128, 128, .75 )";
+    }
+
+    /**
+     * @param { string } fs
+     */
+    set fillStyle( fs = "rgba( 128, 128, 128, .75 )" ) {
+        this.#fillStyle = fs;
     }
 
     addPolyline( points ) {
@@ -31,7 +42,7 @@ class Editor {
     }
     
     addPlanarPolygon( vertices, holes = undefined ) {
-        this.meshes.push( new Mesh( vertices, [ range( 0, vertices.length - 1 ) ] ) );
+        this.meshes.push( new Mesh( vertices, [ range( 0, vertices.length - 1 ) ], this.#fillStyle ) );
         if ( this.selectActive ) {
             this.selection.push( { m: this.meshes.length - 1, f: [ 0 ] } );
         }

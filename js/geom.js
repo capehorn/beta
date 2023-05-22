@@ -101,13 +101,89 @@ function isInside( [ x, y ] = p, vs ) {
  * Weiler-Atherton polygon clipping algorithm
  * https://www.geeksforgeeks.org/weiler-atherton-polygon-clipping-algorithm/
  */
-function polygonClipping( cvs, vs ) {
-    for ( let ci = 0, cj = cvs.length - 1; ci < cvs.length; cj = ci++ ) {
-        for ( let i = 0, j = vs.length - 1; i < vs.length; j = i++ ) {
-            const intersection = lineSegmentIntersection( cvs[ ci ], cvs[ cj ], vs[ i ], vs[ j ] );
-            console.log( intersection );
+export function polygonClipping( cvs, vs ) {
+
+    const intersections = [];
+    
+    for ( let i = 0, j = 1, len = vs.length; i < len; j = ( ( i++ + 2 ) % len ) ) {
+        for ( let ci = 0, cj = 1, len = cvs.length; ci < len; cj = ( ( ci++ + 2 ) % len ) ) {
+            const intersection = lineSegmentIntersection( vs[ i ], vs[ j ], cvs[ ci ], cvs[ cj ] );
+            if ( intersection !== null) {
+                intersections.push( { i, j, ci, cj, v: intersection, type: isInside( vs[ j ], cvs ) ? "entering" : "leaving" } );
+            }
         }
     }
+
+    function nextNode( currNode, atStart ) {
+        if ( atStart ) {
+            return { type: "polygon", value: currNode.value.j };
+        }
+
+        if ( currNode.type === "polygon" ) {
+            let idx = currNode.value;
+            let isec = intersections.find( isec => isec.i === idx );
+            if ( isec === undefined ) {
+                return { type: "polygon", value: idx < vs.length - 1 ? idx + 1 : 0 };
+            }
+            return { type: "intersection", value: isec };
+        }
+
+        if ( currNode.type === "clipping" ) {
+            let idx = currNode.value;
+            let isec = intersections.find( isec => isec.ci === idx );
+            if ( isec === undefined ) {
+                return { type: "clipping", value: idx < cvs.length - 1 ? idx + 1 : 0 };
+            }
+            return { type: "intersection", value: isec };
+        }
+
+        if ( currNode.type === "intersection" ) {
+            let { i, j, ci, cj, v, type } = currNode.value;
+            if ( type === "leaving" ) {
+                return { type: "clipping", value: currNode.value.cj }
+            }
+            return currNode;
+        }
+    }
+
+    const clips = [];
+    for ( let i = 0; i < intersections.length; i++ ) {
+        const isec = intersections[ i ];
+        console.log( intersections[ i ] );
+        if ( isec.type === "entering" ) {
+            const clip = [];
+            const startNode = { type: "intersection", value: isec };
+            clip.push( startNode );
+            let currNode = startNode;
+            let atStart = true;
+            let counter = 0;
+            while ( ( currNode = nextNode( currNode, atStart ) ) ) {
+                if ( 10 < counter || currNode.value === startNode.value ) {
+                    break;
+                }
+                clip.push( currNode );
+                atStart = false;
+                counter++;
+            }
+            clips.push( clip );
+        }
+    }
+    
+    console.log( intersections );
+    console.log( clips );
+    return clips.map( clip => clip.map( ( { type, value } ) => {
+        if ( type === "polygon" ) {
+            return vs[ value ];
+        }
+
+        if ( type === "clipping" ) {
+            return cvs[ value ];
+        }
+
+        if ( type === "intersection" ) {
+            return value.v;
+        }
+    } )); 
 }
 
 

@@ -50,14 +50,15 @@
     import * as V from "./js/vector.js";
     import * as M from "./js/matrix.js";
     import { Transform } from "./js/transform.js";
+    import { Camera } from "./js/camera.js";
     import { Scene } from "./js/scene.js";
     import { CanvasRenderer } from "./js/canvas-renderer.js";
     import { range } from "./js/utils.js";
-    import { lineSegmentIntersection } from "./js/geom.js";
+    import { lineSegmentIntersection, polygonClipping } from "./js/geom.js";
 
     const testView = document.getElementById( "test-view" );
 
-    test( "Draw complex scene", editor => {
+    test( "Draw complex scene", { camera: Camera.isometric(), canvasWidth: 800, canvasHeight: 800 }, editor => {
         editor.selectOn();
         //editor.addPlanarPolygon( [ [ 0, 0, 0 ],  [ 100, 0, 0 ], [ 100, 100, 0 ], [ 0, 100, 0 ] ] );
         
@@ -73,27 +74,39 @@
         editor.extrudeBy( [ 0, 0, 60 ] );
     } );
 
-    test( "Clipping", editor => {
-        editor.addPlanarPolygon( [ [ 0, 0, 0 ],  [ 300, 0, 0 ], [ 300, 0, 300 ], [ 200, 0, 300 ], [ 200, 0, 100 ], [ 100, 0, 100 ], [ 100, 0, 300 ], [ 0, 0, 300 ] ] );
-        editor.selectClear();
-        editor.addPlanarPolygon( [ [ 120, 0, 120 ],  [ 180, 0, 120 ], [ 180, 250, 120 ], [ 120, 250, 120 ] ] );
+    test( "Clipping", { camera: Camera.standard(), canvasWidth: 300, canvasHeight: 300 }, editor => {
+        const cvs = [ [ 100, 100 ],  [ 100, 200 ], [ 200, 200 ], [ 200, 100 ] ];
+        const vs = [ [ 150, 150 ],  [ 150, 250 ], [ 250, 250 ], [ 250, 150 ] ];
+        editor.selectOff();
+        editor.fillStyle = "rgba( 192, 128, 64, .6 )";
+        editor.addPlanarPolygon( cvs );
+        editor.addPlanarPolygon( vs );
+
+        const clippingResult = polygonClipping( cvs, vs );
+        editor.fillStyle = "rgba( 256, 256, 64, .8 )";
+        editor.addPlanarPolygon( clippingResult[ 0 ] );
+
+        console.log( clippingResult );
+        //editor.addPlanarPolygon( [ [ 0, 0, 0 ],  [ 300, 0, 0 ], [ 300, 0, 300 ], [ 200, 0, 300 ], [ 200, 0, 100 ], [ 100, 0, 100 ], [ 100, 0, 300 ], [ 0, 0, 300 ] ] );
+        //editor.selectClear();
+        //editor.addPlanarPolygon( [ [ 120, 0, 120 ],  [ 180, 0, 120 ], [ 180, 250, 120 ], [ 120, 250, 120 ] ] );
     } );
 
 
-    function test( name, fnEditor ) {
+    function test( name, { camera, canvasWidth, canvasHeight } = props, fnEditor ) {
         const testTemplate = document.getElementsByTagName( "template" )[ 0 ];
         const node = testTemplate.content.cloneNode( true );
         const testView = document.getElementById( "test-view" );
         const titleView = node.querySelector( ".test-title" );
         titleView.textContent = name;
         const canvas = node.querySelector( "canvas.test-canvas" );
-        canvas.width = 800;
-        canvas.height = 800;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         testView.appendChild( node );
         const scene = new Scene();
         const editor = scene.edit();
         fnEditor( editor );
-        const renderer = new CanvasRenderer( canvas, scene );
+        const renderer = new CanvasRenderer( canvas, scene, camera );
         renderer.render();
     }
 
